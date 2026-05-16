@@ -12,11 +12,22 @@ A Chrome extension that automatically clicks queue buttons the moment they appea
 
 ## Installation
 
-1. Clone this repository or download the source code
-2. Open Chrome and navigate to `chrome://extensions/`
-3. Enable "Developer mode" (toggle in top right)
-4. Click "Load unpacked" and select the project directory
-5. The BLITZ extension should now appear in your extensions
+### Quick Install (Recommended)
+
+1. **Download** the extension: [blitz-extension.zip](https://github.com/akshay-ellendula/blitz-extension/archive/refs/heads/master.zip)
+2. **Extract** the ZIP file to any folder
+3. Open **Chrome** and go to `chrome://extensions/`
+4. Enable **"Developer mode"** (toggle in top right)
+5. Click **"Load unpacked"** and select the extracted folder
+6. Done! BLITZ appears in your extensions
+
+### Alternative: Clone from GitHub
+
+```bash
+git clone https://github.com/akshay-ellendula/blitz-extension.git
+cd blitz-extension
+```
+Then follow steps 3-6 above.
 
 ## Usage
 
