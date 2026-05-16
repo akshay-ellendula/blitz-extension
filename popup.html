@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>BLITZ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#080808; --bg2:#111; --bg3:#181818; --border:#222; --border2:#2c2c2c;
+  --yellow:#FFE500; --ydim:#ffe50018; --green:#00FF88; --red:#FF3B3B;
+  --muted:#555; --text:#f0f0f0; --text2:#888; --text3:#444;
+}
+body{width:360px;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;overflow:hidden;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px);pointer-events:none;z-index:999;}
+
+/* Header */
+.hdr{background:var(--yellow);padding:13px 18px 11px;position:relative;overflow:hidden;}
+.hdr::after{content:'';position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");pointer-events:none;}
+.hdr-inner{display:flex;align-items:center;position:relative;}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:36px;line-height:1;color:#080808;letter-spacing:2px;}
+.bolt{display:inline-block;animation:bp 1.8s ease-in-out infinite;}
+@keyframes bp{0%,100%{transform:scale(1);}50%{transform:scale(1.12) rotate(-5deg);}}
+.sub{font-size:8px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#080808;opacity:0.5;margin-top:1px;}
+.badge{margin-left:auto;background:#08080815;border:1px solid #08080828;border-radius:3px;padding:2px 7px;font-size:9px;color:#080808;letter-spacing:1px;font-weight:700;}
+
+/* Tabs */
+.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);}
+.tab{flex:1;padding:9px 0 8px;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--text3);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;transition:color .2s,border-color .2s;}
+.tab:hover{color:var(--text2);}
+.tab.active{color:var(--yellow);border-bottom-color:var(--yellow);}
+
+/* Panels */
+.panel{display:none;padding:13px 14px;}
+.panel.active{display:block;}
+
+/* Status card */
+.sc{border:1px solid var(--border);border-radius:4px;padding:10px 13px;margin-bottom:10px;background:var(--bg2);position:relative;overflow:hidden;}
+.sc::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--muted);transition:background .3s;}
+.sc.armed::before{background:var(--yellow);box-shadow:0 0 10px var(--yellow);}
+.sc.fired::before{background:var(--green);box-shadow:0 0 10px var(--green);}
+.sr{display:flex;align-items:center;gap:9px;}
+.sd{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s,box-shadow .3s;}
+.armed .sd{background:var(--yellow);box-shadow:0 0 8px var(--yellow);animation:dp 1s ease-in-out infinite;}
+.fired .sd{background:var(--green);box-shadow:0 0 8px var(--green);}
+@keyframes dp{0%,100%{opacity:1;}50%{opacity:.3;}}
+.sl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text2);}
+.sv{margin-left:auto;font-size:10px;color:var(--yellow);font-weight:700;letter-spacing:1px;}
+.sc.idle .sv{color:var(--muted);}
+.sc.fired .sv{color:var(--green);}
+.site{margin-top:6px;font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.site span{color:var(--text2);}
+
+/* Main button */
+.mbtn{width:100%;border:none;border-radius:4px;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;cursor:pointer;padding:12px 0 10px;transition:all .15s;position:relative;overflow:hidden;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:9px;}
+.mbtn:active{transform:scale(.98);}
+.mbtn.arm{background:var(--yellow);color:#080808;}
+.mbtn.arm:hover{background:#fff200;box-shadow:0 0 28px rgba(255,229,0,.35);}
+.mbtn.arm::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent);transform:translateX(-100%);animation:sh 2.5s infinite;}
+@keyframes sh{100%{transform:translateX(100%);}}
+.mbtn.disarm{background:transparent;color:var(--red);border:1px solid var(--red);}
+.mbtn.disarm:hover{background:#ff3b3b12;}
+.mbtn.success{background:transparent;color:var(--green);border:1px solid var(--green);}
+.mbtn:disabled{opacity:.22;cursor:not-allowed;transform:none !important;}
+
+/* Fired banner */
+.fb{display:none;background:#00ff880d;border:1px solid #00ff8822;border-radius:4px;padding:9px 13px;margin-bottom:10px;font-size:10px;color:var(--green);line-height:1.6;}
+.fb b{font-weight:700;display:block;margin-bottom:2px;}
+
+/* Keyword */
+.sec-lbl{font-size:8px;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+.kw-row{display:flex;gap:6px;margin-bottom:7px;}
+.kw-in{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'Inter',sans-serif;font-size:11px;padding:7px 10px;outline:none;transition:border .2s;}
+.kw-in:focus{border-color:var(--yellow);}
+.kw-in::placeholder{color:var(--muted);}
+.kw-add{background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--text2);font-size:18px;width:34px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;}
+.kw-add:hover{border-color:var(--yellow);color:var(--yellow);}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px;}
+.chip{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:3px 8px 3px 9px;font-size:10px;color:var(--text2);display:flex;align-items:center;gap:5px;}
+.chip-x{cursor:pointer;color:var(--muted);font-size:13px;line-height:1;transition:color .15s;}
+.chip-x:hover{color:var(--red);}
+
+/* Settings rows */
+.ss{margin-bottom:16px;}
+.ss-title{font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--yellow);opacity:.75;margin-bottom:7px;}
+.srow{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:10px 13px;margin-bottom:5px;}
+.srow:last-child{margin-bottom:0;}
+.srow-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.sname{font-size:11px;color:var(--text);font-weight:700;}
+.sdesc{font-size:9px;color:var(--text3);margin-top:4px;line-height:1.55;letter-spacing:.2px;}
+
+/* Number input */
+.nin{background:var(--bg3);border:1px solid var(--border2);border-radius:3px;color:var(--yellow);font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;text-align:center;width:68px;padding:5px 6px;outline:none;transition:border .2s;}
+.nin:focus{border-color:var(--yellow);}
+
+/* Toggle */
+.tog{position:relative;display:inline-block;width:36px;height:19px;flex-shrink:0;}
+.tog input{opacity:0;width:0;height:0;}
+.tslide{position:absolute;inset:0;background:var(--bg3);border:1px solid var(--border2);border-radius:20px;cursor:pointer;transition:.2s;}
+.tslide::before{content:'';position:absolute;width:13px;height:13px;left:2px;top:2px;background:var(--muted);border-radius:50%;transition:.2s;}
+input:checked+.tslide{background:var(--ydim);border-color:var(--yellow);}
+input:checked+.tslide::before{transform:translateX(17px);background:var(--yellow);}
+
+/* Select */
+.nsel{background:var(--bg3);border:1px solid var(--border2);border-radius:3px;color:var(--yellow);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:5px 8px;outline:none;cursor:pointer;}
+.nsel option{background:var(--bg3);color:var(--text);}
+
+/* Range */
+.rng-wrap{margin-top:8px;}
+.rng-row{display:flex;align-items:center;gap:10px;}
+.rng{flex:1;-webkit-appearance:none;appearance:none;height:3px;background:var(--border2);border-radius:2px;outline:none;cursor:pointer;}
+.rng::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--yellow);cursor:pointer;}
+.rval{font-size:10px;color:var(--yellow);font-weight:700;min-width:40px;text-align:right;letter-spacing:.5px;}
+
+/* About */
+.arow{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:11px;}
+.arow:last-child{border-bottom:none;}
+.ak{color:var(--text2);}
+.av{color:var(--text);font-weight:700;}
+.av.g{color:var(--green);}
+.av.y{color:var(--yellow);}
+
+.rst-btn{width:100%;margin-top:11px;background:transparent;border:1px solid var(--border2);border-radius:4px;padding:8px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);cursor:pointer;transition:all .15s;}
+.rst-btn:hover{border-color:var(--red);color:var(--red);}
+
+/* Divider */
+.div{height:1px;background:var(--border);margin:10px 0;}
+
+/* SVG Icons */
+.ico{display:inline-block;width:1em;height:1em;vertical-align:-0.125em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.ico-sm{width:10px;height:10px;}
+.ico-md{width:13px;height:13px;}
+.ico-lg{width:16px;height:16px;}
+
+/* Unsupported page overlay */
+.unsupported-overlay{display:none;position:fixed;inset:0;z-index:1000;background:var(--bg);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 28px;}
+.unsupported-overlay.visible{display:flex;}
+.unsupported-ico{width:56px;height:56px;border-radius:50%;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin-bottom:16px;}
+.unsupported-ico svg{width:26px;height:26px;stroke:var(--yellow);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:.85;}
+.unsupported-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--text);margin-bottom:6px;}
+.unsupported-desc{font-size:11px;color:var(--text2);line-height:1.65;margin-bottom:18px;max-width:260px;}
+.unsupported-desc strong{color:var(--yellow);font-weight:600;}
+.unsupported-url{display:inline-block;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'JetBrains Mono',monospace;font-size:9px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:5px 12px;color:var(--muted);letter-spacing:.3px;margin-bottom:18px;}
+.unsupported-hint{font-size:9px;color:var(--text3);letter-spacing:.5px;line-height:1.7;}
+.unsupported-hint svg{width:10px;height:10px;vertical-align:-1px;stroke:var(--yellow);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+
+/* Footer */
+.footer{font-size:8px;color:#2a2a2a;letter-spacing:1.5px;text-align:center;padding:7px 14px;border-top:1px solid var(--border);text-transform:uppercase;}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-inner">
+    <div>
+      <div class="logo"><span class="bolt">⚡</span> BLITZ</div>
+      <div class="sub">Instant Queue Grabber</div>
+    </div>
+    <div class="badge">v1.0</div>
+  </div>
+</div>
+
+<!-- Unsupported Page Overlay -->
+<div class="unsupported-overlay" id="unsupportedOverlay">
+  <div class="unsupported-ico">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M4.93 4.93l14.14 14.14"/></svg>
+  </div>
+  <div class="unsupported-title">Page Not Supported</div>
+  <div class="unsupported-desc">
+    BLITZ works on <strong>real websites</strong> only.<br/>
+    This page is a browser internal page where extensions can't run.
+  </div>
+  <div class="unsupported-url" id="unsupportedUrl"></div>
+  <div class="unsupported-hint">
+    <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="currentColor" stroke="none"/></svg>
+    Navigate to any website and try again
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="sniper"><svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="currentColor" stroke="none"/></svg> Sniper</button>
+  <button class="tab" data-tab="settings"><svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg> Settings</button>
+  <button class="tab" data-tab="about"><svg class="ico ico-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg> About</button>
+</div>
+
+<!-- SNIPER -->
+<div class="panel active" id="tab-sniper">
+  <div class="sc idle" id="statusCard">
+    <div class="sr">
+      <div class="sd"></div>
+      <div class="sl">Status</div>
+      <div class="sv" id="statusValue">IDLE</div>
+    </div>
+    <div class="site" id="siteRow">No active tab detected</div>
+  </div>
+
+  <div class="fb" id="firedBanner">
+    <b><svg class="ico ico-md" viewBox="0 0 24 24" style="stroke:var(--green);"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> QUEUE JOINED!</b>
+    Button clicked — finish booking before time runs out!
+  </div>
+
+  <button class="mbtn arm" id="mainBtn"><svg class="ico ico-lg" viewBox="0 0 24 24" style="fill:#080808;stroke:none;"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> ARM BLITZ</button>
+
+  <div class="sec-lbl">Extra Button Keywords</div>
+  <div class="kw-row">
+    <input class="kw-in" id="kwInput" type="text" placeholder='e.g. "Register Now"' maxlength="50"/>
+    <button class="kw-add" id="kwAdd">+</button>
+  </div>
+  <div class="chips" id="kwChips"></div>
+</div>
+
+<!-- SETTINGS -->
+<div class="panel" id="tab-settings">
+
+  <div class="ss">
+    <div class="ss-title"><svg class="ico ico-sm" viewBox="0 0 24 24" style="stroke:var(--yellow);"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Speed &amp; Timing</div>
+
+    <div class="srow">
+      <div class="srow-top">
+        <div>
+          <div class="sname">Checking Speed</div>
+          <div class="sdesc">How fast BLITZ checks for the button. Faster is better, but might get blocked on some sites.</div>
+        </div>
+      </div>
+      <div class="rng-wrap">
+        <div class="rng-row">
+          <input type="range" class="rng" id="scanSpeed" min="100" max="2000" step="100" value="300"/>
+          <div class="rval" id="scanSpeedVal">300ms</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ss">
+    <div class="ss-title"><svg class="ico ico-sm" viewBox="0 0 24 24" style="stroke:var(--yellow);"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> Behaviour</div>
+
+    <div class="srow">
+      <div class="srow-top">
+        <div>
+          <div class="sname">Play Sound on Success</div>
+          <div class="sdesc">Plays a beep when you successfully join the queue.</div>
+        </div>
+        <label class="tog"><input type="checkbox" id="soundAlert" checked/><span class="tslide"></span></label>
+      </div>
+    </div>
+
+    <div class="srow">
+      <div class="srow-top">
+        <div>
+          <div class="sname">Auto-Switch to Tab</div>
+          <div class="sdesc">Automatically opens the booking page as soon as it's your turn.</div>
+        </div>
+        <label class="tog"><input type="checkbox" id="focusTab" checked/><span class="tslide"></span></label>
+      </div>
+    </div>
+  </div>
+
+  <button class="rst-btn" id="resetSettings"><svg class="ico ico-sm" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg> Reset all settings to default</button>
+</div>
+
+<!-- ABOUT -->
+<div class="panel" id="tab-about">
+  <div class="ss">
+    <div class="ss-title"><svg class="ico ico-sm" viewBox="0 0 24 24" style="stroke:var(--yellow);"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg> Extension Info</div>
+    <div class="arow"><span class="ak">Name</span><span class="av">BLITZ</span></div>
+    <div class="arow"><span class="ak">Version</span><span class="av y">v1.0</span></div>
+    <div class="arow"><span class="ak">Works on</span><span class="av">Any website</span></div>
+    <div class="arow"><span class="ak">Data collected</span><span class="av g">None</span></div>
+    <div class="arow"><span class="ak">Sends data anywhere</span><span class="av g">Never</span></div>
+    <div class="arow"><span class="ak">Current scan speed</span><span class="av y" id="aboutScan">300ms</span></div>
+  </div>
+
+  <div class="ss">
+    <div class="ss-title"><svg class="ico ico-sm" viewBox="0 0 24 24" style="stroke:var(--green);"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Supported Platforms</div>
+    <div class="arow"><span class="ak">District by Zomato</span><span class="av g">✓</span></div>
+    <div class="arow"><span class="ak">BookMyShow</span><span class="av g">✓</span></div>
+    <div class="arow"><span class="ak">Paytm Insider</span><span class="av g">✓</span></div>
+    <div class="arow"><span class="ak">IRCTC</span><span class="av g">✓</span></div>
+    <div class="arow"><span class="ak">Flipkart / Meesho Flash Sales</span><span class="av g">✓</span></div>
+    <div class="arow"><span class="ak">Any other site</span><span class="av g">✓</span></div>
+  </div>
+</div>
+
+<div class="footer">Zero data · Works everywhere · Built for speed</div>
+
+<script src="popup.js"></script>
+</body>
+</html>
