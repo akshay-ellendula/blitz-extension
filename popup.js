@@ -34,6 +34,7 @@ let settings = { ...DEFAULTS };
 let keywords = [];
 let currentTabId = null;
 let currentState = { armed: false, fired: false };
+let logs = [];
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(tab => {
@@ -68,8 +69,13 @@ resetBtn.addEventListener('click', () => {
   keywords = [];
   saveSettings();
   chrome.storage.local.set({ blitzKeywords: [] });
+  if (currentTabId) {
+    chrome.storage.local.set({ [`blitzLogs_${currentTabId}`]: [] });
+  }
+  logs = [];
   loadSettingsIntoUI();
   renderChips();
+  renderLogs();
 });
 
 function loadSettingsIntoUI() {
@@ -121,6 +127,31 @@ function addKeyword() {
 kwAdd.addEventListener('click', addKeyword);
 kwInput.addEventListener('keydown', e => { if (e.key === 'Enter') addKeyword(); });
 
+// ── Logging ───────────────────────────────────────────────────────────────────
+const activityLog = $('activityLog');
+
+function renderLogs() {
+  if (!activityLog) return;
+  if (logs.length === 0) {
+    activityLog.innerHTML = '<div class="log-entry" style="text-align:center;color:var(--muted);font-size:9px;padding:10px 0;">No activity yet</div>';
+    return;
+  }
+  activityLog.innerHTML = logs.map(l => 
+    `<div class="log-entry"><span class="log-time">• ${l.time}</span> — <span class="log-msg">${l.msg}</span></div>`
+  ).join('');
+}
+
+function addLog(msg) {
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }).toLowerCase();
+  logs.unshift({ time: timeStr, msg });
+  if (logs.length > 50) logs.pop();
+  if (currentTabId) {
+    chrome.storage.local.set({ [`blitzLogs_${currentTabId}`]: logs });
+  }
+  renderLogs();
+}
+
 // ── Sniper UI ─────────────────────────────────────────────────────────────────
 function setUI(state) {
   currentState = state;
@@ -155,14 +186,23 @@ mainBtn.addEventListener('click', () => {
     chrome.tabs.sendMessage(currentTabId, { type: 'BLITZ_DISARM' }, () => {
       chrome.storage.local.set({ blitzArmed: false });
       setUI({ armed: false, fired: false });
+      addLog('Sniper reset after firing.');
     });
     return;
   }
 
   if (currentState.armed) {
     chrome.tabs.sendMessage(currentTabId, { type: 'BLITZ_DISARM' }, () => {
-      chrome.storage.local.set({ blitzArmed: false });
-      setUI({ armed: false, fired: false });
+      chrome.storage.local.get(['blitzStartTime'], res => {
+        let secStr = '';
+        if (res.blitzStartTime) {
+          const secs = ((Date.now() - res.blitzStartTime) / 1000).toFixed(1);
+          secStr = ` Ran for ${secs}s.`;
+        }
+        chrome.storage.local.set({ blitzArmed: false, blitzStartTime: null });
+        setUI({ armed: false, fired: false });
+        addLog(`Sniper stopped.${secStr}`);
+      });
     });
   } else {
     const effectiveSpeed = settings.scanSpeed;
@@ -171,8 +211,9 @@ mainBtn.addEventListener('click', () => {
       customKeywords: keywords,
       settings: { ...settings, scanSpeed: effectiveSpeed },
     }, () => {
-      chrome.storage.local.set({ blitzArmed: true });
+      chrome.storage.local.set({ blitzArmed: true, blitzStartTime: Date.now() });
       setUI({ armed: true, fired: false });
+      addLog(`Sniper armed. Checking every ${effectiveSpeed}ms.`);
     });
   }
 });
@@ -214,6 +255,11 @@ chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
   if (!tab) return;
   currentTabId = tab.id;
 
+  chrome.storage.local.get([`blitzLogs_${tab.id}`], res => {
+    logs = res[`blitzLogs_${tab.id}`] || [];
+    renderLogs();
+  });
+
   // ── Check if page is supported ──
   if (isUnsupportedUrl(tab.url)) {
     showUnsupportedOverlay(tab.url);
@@ -237,6 +283,17 @@ chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
 });
 
 chrome.runtime.onMessage.addListener(msg => {
-  if (msg.type === 'BLITZ_FIRED') setUI({ armed: false, fired: true });
+  if (msg.type === 'BLITZ_FIRED') {
+    setUI({ armed: false, fired: true });
+    chrome.storage.local.get(['blitzStartTime'], res => {
+      let secStr = '';
+      if (res.blitzStartTime) {
+        const secs = ((Date.now() - res.blitzStartTime) / 1000).toFixed(1);
+        secStr = ` in ${secs}s`;
+      }
+      addLog(`Target clicked${secStr}! Queue joined.`);
+      chrome.storage.local.set({ blitzStartTime: null });
+    });
+  }
   if (msg.type === 'BLITZ_STATUS') setUI({ armed: msg.active, fired: currentState.fired });
 });
