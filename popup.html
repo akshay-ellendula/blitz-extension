@@ -10,11 +10,11 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
-  --bg:#080808; --bg2:#111; --bg3:#181818; --border:#222; --border2:#2c2c2c;
+  --bg:#080808; --bg2:#111; --bg3:#181818; --border:#333; --border2:#444;
   --yellow:#FFE500; --ydim:#ffe50018; --green:#00FF88; --red:#FF3B3B;
-  --muted:#555; --text:#f0f0f0; --text2:#888; --text3:#444;
+  --muted:#888; --text:#ffffff; --text2:#cccccc; --text3:#999999;
 }
-body{width:360px;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;overflow:hidden;}
+body{width:360px;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-weight:500;overflow:hidden;}
 body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px);pointer-events:none;z-index:999;}
 
 /* Header */
@@ -210,17 +210,14 @@ input:checked+.tslide::before{transform:translateX(17px);background:var(--yellow
 
   <button class="mbtn arm" id="mainBtn"><svg class="ico ico-lg" viewBox="0 0 24 24" style="fill:#080808;stroke:none;"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> ARM BLITZ</button>
 
-  <div class="sec-lbl">Activity Log</div>
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <div class="sec-lbl">Activity Log</div>
+    <div id="clearLogsBtn" style="font-size:8px; color:var(--red); cursor:pointer; text-transform:uppercase; letter-spacing:1px; margin-bottom:5px;">Clear Logs</div>
+  </div>
   <div class="log-box" id="activityLog">
     <div class="log-entry" style="text-align:center;color:var(--muted);font-size:9px;padding:10px 0;">No activity yet</div>
   </div>
 
-  <div class="sec-lbl">Extra Button Keywords</div>
-  <div class="kw-row">
-    <input class="kw-in" id="kwInput" type="text" placeholder='e.g. "Register Now"' maxlength="50"/>
-    <button class="kw-add" id="kwAdd">+</button>
-  </div>
-  <div class="chips" id="kwChips"></div>
 </div>
 
 <!-- SETTINGS -->
@@ -245,30 +242,6 @@ input:checked+.tslide::before{transform:translateX(17px);background:var(--yellow
     </div>
   </div>
 
-  <div class="ss">
-    <div class="ss-title"><svg class="ico ico-sm" viewBox="0 0 24 24" style="stroke:var(--yellow);"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> Behaviour</div>
-
-    <div class="srow">
-      <div class="srow-top">
-        <div>
-          <div class="sname">Play Sound on Success</div>
-          <div class="sdesc">Plays a beep when you successfully join the queue.</div>
-        </div>
-        <label class="tog"><input type="checkbox" id="soundAlert" checked/><span class="tslide"></span></label>
-      </div>
-    </div>
-
-    <div class="srow">
-      <div class="srow-top">
-        <div>
-          <div class="sname">Auto-Switch to Tab</div>
-          <div class="sdesc">Automatically opens the booking page as soon as it's your turn.</div>
-        </div>
-        <label class="tog"><input type="checkbox" id="focusTab" checked/><span class="tslide"></span></label>
-      </div>
-    </div>
-  </div>
-
   <button class="rst-btn" id="resetSettings"><svg class="ico ico-sm" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg> Reset all settings to default</button>
 </div>
 
@@ -278,7 +251,7 @@ input:checked+.tslide::before{transform:translateX(17px);background:var(--yellow
     <div class="ss-title"><svg class="ico ico-sm" viewBox="0 0 24 24" style="stroke:var(--yellow);"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg> Extension Info</div>
     <div class="arow"><span class="ak">Name</span><span class="av">BLITZ</span></div>
     <div class="arow"><span class="ak">Version</span><span class="av y">v1.0</span></div>
-    <div class="arow"><span class="ak">Works on</span><span class="av">Any website</span></div>
+    <div class="arow"><span class="ak">Works on</span><span class="av">BMS & District</span></div>
     <div class="arow"><span class="ak">Data collected</span><span class="av g">None</span></div>
     <div class="arow"><span class="ak">Sends data anywhere</span><span class="av g">Never</span></div>
     <div class="arow"><span class="ak">Current scan speed</span><span class="av y" id="aboutScan">300ms</span></div>
@@ -288,14 +261,10 @@ input:checked+.tslide::before{transform:translateX(17px);background:var(--yellow
     <div class="ss-title"><svg class="ico ico-sm" viewBox="0 0 24 24" style="stroke:var(--green);"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Supported Platforms</div>
     <div class="arow"><span class="ak">District by Zomato</span><span class="av g">✓</span></div>
     <div class="arow"><span class="ak">BookMyShow</span><span class="av g">✓</span></div>
-    <div class="arow"><span class="ak">Paytm Insider</span><span class="av g">✓</span></div>
-    <div class="arow"><span class="ak">IRCTC</span><span class="av g">✓</span></div>
-    <div class="arow"><span class="ak">Flipkart / Meesho Flash Sales</span><span class="av g">✓</span></div>
-    <div class="arow"><span class="ak">Any other site</span><span class="av g">✓</span></div>
   </div>
 </div>
 
-<div class="footer">Zero data · Works everywhere · Built for speed</div>
+<div class="footer">Zero data · BookMyShow & District · Built for speed</div>
 
 <script src="popup.js"></script>
 </body>

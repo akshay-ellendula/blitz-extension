@@ -1,3 +1,4 @@
+
 // BLITZ — Popup Script v1.0
 
 const $ = id => document.getElementById(id);
@@ -8,15 +9,10 @@ const statusValue = $('statusValue');
 const siteRow     = $('siteRow');
 const mainBtn     = $('mainBtn');
 const firedBanner = $('firedBanner');
-const kwInput     = $('kwInput');
-const kwAdd       = $('kwAdd');
-const kwChips     = $('kwChips');
 
 // Settings
 const scanSpeedEl    = $('scanSpeed');
 const scanSpeedVal   = $('scanSpeedVal');
-const soundAlertEl   = $('soundAlert');
-const focusTabEl     = $('focusTab');
 const resetBtn       = $('resetSettings');
 
 // About
@@ -25,13 +21,9 @@ const aboutScan  = $('aboutScan');
 // ── Defaults ──────────────────────────────────────────────────────────────────
 const DEFAULTS = {
   scanSpeed:    300,
-  soundAlert:   true,
-  focusTab:     true,
-  keywords:     [],
 };
 
 let settings = { ...DEFAULTS };
-let keywords = [];
 let currentTabId = null;
 let currentState = { armed: false, fired: false };
 let logs = [];
@@ -57,32 +49,20 @@ scanSpeedEl.addEventListener('input', () => {
   updateAbout();
 });
 
-[soundAlertEl, focusTabEl].forEach(el => {
-  el.addEventListener('change', () => {
-    settings[el.id] = el.checked;
-    saveSettings();
-  });
-});
-
 resetBtn.addEventListener('click', () => {
   settings = { ...DEFAULTS };
-  keywords = [];
   saveSettings();
-  chrome.storage.local.set({ blitzKeywords: [] });
   if (currentTabId) {
     chrome.storage.local.set({ [`blitzLogs_${currentTabId}`]: [] });
   }
   logs = [];
   loadSettingsIntoUI();
-  renderChips();
   renderLogs();
 });
 
 function loadSettingsIntoUI() {
-  scanSpeedEl.value = settings.scanSpeed;
-  scanSpeedVal.textContent = fmtSpeed(settings.scanSpeed);
-  soundAlertEl.checked   = settings.soundAlert;
-  focusTabEl.checked     = settings.focusTab;
+  if (scanSpeedEl) scanSpeedEl.value = settings.scanSpeed;
+  if (scanSpeedVal) scanSpeedVal.textContent = fmtSpeed(settings.scanSpeed);
   updateAbout();
 }
 
@@ -95,40 +75,11 @@ function saveSettings() {
   chrome.storage.local.set({ blitzSettings: settings });
 }
 
-// ── Keywords ──────────────────────────────────────────────────────────────────
-function renderChips() {
-  kwChips.innerHTML = '';
-  keywords.forEach((kw, i) => {
-    const c = document.createElement('div');
-    c.className = 'chip';
-    c.innerHTML = `${kw}<span class="chip-x" data-i="${i}">×</span>`;
-    kwChips.appendChild(c);
-  });
-  kwChips.querySelectorAll('.chip-x').forEach(el => {
-    el.addEventListener('click', () => {
-      keywords.splice(+el.dataset.i, 1);
-      chrome.storage.local.set({ blitzKeywords: keywords });
-      renderChips();
-    });
-  });
-}
 
-function addKeyword() {
-  const v = kwInput.value.trim();
-  if (v && !keywords.includes(v)) {
-    keywords.push(v);
-    chrome.storage.local.set({ blitzKeywords: keywords });
-    renderChips();
-  }
-  kwInput.value = '';
-  kwInput.focus();
-}
-
-kwAdd.addEventListener('click', addKeyword);
-kwInput.addEventListener('keydown', e => { if (e.key === 'Enter') addKeyword(); });
 
 // ── Logging ───────────────────────────────────────────────────────────────────
 const activityLog = $('activityLog');
+const clearLogsBtn = $('clearLogsBtn');
 
 function renderLogs() {
   if (!activityLog) return;
@@ -139,6 +90,16 @@ function renderLogs() {
   activityLog.innerHTML = logs.map(l => 
     `<div class="log-entry"><span class="log-time">• ${l.time}</span> — <span class="log-msg">${l.msg}</span></div>`
   ).join('');
+}
+
+if (clearLogsBtn) {
+  clearLogsBtn.addEventListener('click', () => {
+    logs = [];
+    if (currentTabId) {
+      chrome.storage.local.set({ [`blitzLogs_${currentTabId}`]: [] });
+    }
+    renderLogs();
+  });
 }
 
 function addLog(msg) {
@@ -184,36 +145,47 @@ mainBtn.addEventListener('click', () => {
 
   if (currentState.fired) {
     chrome.tabs.sendMessage(currentTabId, { type: 'BLITZ_DISARM' }, () => {
-      chrome.storage.local.set({ blitzArmed: false });
       setUI({ armed: false, fired: false });
-      addLog('Sniper reset after firing.');
+      
+      // Clear the logs
+      logs = [];
+      if (currentTabId) {
+        chrome.storage.local.set({ [`blitzLogs_${currentTabId}`]: [] });
+      }
+      renderLogs();
     });
     return;
   }
 
   if (currentState.armed) {
     chrome.tabs.sendMessage(currentTabId, { type: 'BLITZ_DISARM' }, () => {
-      chrome.storage.local.get(['blitzStartTime'], res => {
-        let secStr = '';
-        if (res.blitzStartTime) {
-          const secs = ((Date.now() - res.blitzStartTime) / 1000).toFixed(1);
-          secStr = ` Ran for ${secs}s.`;
-        }
-        chrome.storage.local.set({ blitzArmed: false, blitzStartTime: null });
-        setUI({ armed: false, fired: false });
-        addLog(`Sniper stopped.${secStr}`);
-      });
+      setUI({ armed: false, fired: false });
+      
+      // Clear the logs
+      logs = [];
+      if (currentTabId) {
+        chrome.storage.local.set({ [`blitzLogs_${currentTabId}`]: [] });
+      }
+      renderLogs();
     });
   } else {
     const effectiveSpeed = settings.scanSpeed;
+
     chrome.tabs.sendMessage(currentTabId, {
       type: 'BLITZ_ARM',
-      customKeywords: keywords,
       settings: { ...settings, scanSpeed: effectiveSpeed },
-    }, () => {
-      chrome.storage.local.set({ blitzArmed: true, blitzStartTime: Date.now() });
-      setUI({ armed: true, fired: false });
-      addLog(`Sniper armed. Checking every ${effectiveSpeed}ms.`);
+    }, res => {
+      if (chrome.runtime.lastError || !res) {
+        addLog('Error: Please refresh the page first.');
+        return;
+      }
+      
+      // If it didn't fire instantly during the arm() call, we update UI to armed.
+      // (If it did fire instantly, BLITZ_FIRED was sent and UI already handled it)
+      if (!res.fired && res.armed) {
+        setUI({ armed: true, fired: false });
+        addLog(`Sniper armed. Checking every ${effectiveSpeed}ms.`);
+      }
     });
   }
 });
@@ -225,11 +197,22 @@ const UNSUPPORTED_PROTOCOLS = [
   'chrome-search:', 'chrome-untrusted:',
 ];
 
+const SUPPORTED_DOMAINS = [
+  'bookmyshow.com',
+  'district.in',
+  'zomato.com',
+  '127.0.0.1',
+];
+
 function isUnsupportedUrl(url) {
   if (!url) return true;
   try {
     const lc = url.toLowerCase();
-    return UNSUPPORTED_PROTOCOLS.some(p => lc.startsWith(p));
+    // Block browser internal pages
+    if (UNSUPPORTED_PROTOCOLS.some(p => lc.startsWith(p))) return true;
+    // Only allow supported domains
+    const hostname = new URL(lc).hostname;
+    return !SUPPORTED_DOMAINS.some(d => hostname === d || hostname.endsWith('.' + d));
   } catch { return true; }
 }
 
@@ -241,13 +224,11 @@ function showUnsupportedOverlay(url) {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-chrome.storage.local.get(['blitzSettings', 'blitzKeywords'], res => {
+chrome.storage.local.get(['blitzSettings'], res => {
   if (res.blitzSettings) {
     settings = { ...DEFAULTS, ...res.blitzSettings };
   }
-  keywords = res.blitzKeywords || [];
   loadSettingsIntoUI();
-  renderChips();
 });
 
 chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
@@ -285,15 +266,8 @@ chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
 chrome.runtime.onMessage.addListener(msg => {
   if (msg.type === 'BLITZ_FIRED') {
     setUI({ armed: false, fired: true });
-    chrome.storage.local.get(['blitzStartTime'], res => {
-      let secStr = '';
-      if (res.blitzStartTime) {
-        const secs = ((Date.now() - res.blitzStartTime) / 1000).toFixed(1);
-        secStr = ` in ${secs}s`;
-      }
-      addLog(`Target clicked${secStr}! Queue joined.`);
-      chrome.storage.local.set({ blitzStartTime: null });
-    });
+    const secStr = msg.duration > 0 ? ` in ${msg.duration}s` : '';
+    addLog(`Target clicked${secStr}! Queue joined.`);
   }
   if (msg.type === 'BLITZ_STATUS') setUI({ armed: msg.active, fired: currentState.fired });
 });

@@ -10,113 +10,95 @@
   let customKW     = [];
   let cfg          = {
     scanSpeed:    300,
-    soundAlert:   true,
-    focusTab:     true,
   };
+  let startTime    = 0;
 
-  // ── Universal button patterns ──────────────────────────────────────────────
+  // Optimized regex list for "Book Now" and "Book Tickets" only
   const DEFAULT_KEYWORDS = [
-    /^book\s*tickets?$/i, /^buy\s*tickets?$/i, /^get\s*tickets?$/i,
-    /^join\s*(the\s*)?queue$/i, /^enter\s*(the\s*)?queue$/i, /^grab\s*tickets?$/i,
-    /^book\s*now$/i, /^buy\s*now$/i, /^get\s*now$/i,
-    /^proceed\s*to\s*book$/i, /^check\s*availability$/i, /^select\s*seats?$/i,
-    /^register\s*now$/i, /^confirm\s*booking$/i, /^reserve\s*now$/i,
-    /^buy\s*at\s*₹/i, /^grab\s*deal$/i, /^flash\s*sale/i,
-    /^add\s*to\s*cart$/i, /^proceed$/i, /^continue\s*to\s*pay/i,
+    /^book\s*now$/i,
+    /^book\s*tickets?$/i
   ];
 
+  // Combined CSS selectors where possible for faster DOM querying
   const CSS_SELECTORS = [
-    'button[class*="Book"]', 'button[class*="book"]', 'a[class*="Book"]',
-    '[data-testid="book-button"]', '[data-testid="buy-button"]', '[data-testid="bookNow"]',
-    'a.btn-book', '.book-btn', '[class*="bookButton"]', '[class*="BookButton"]', '#book-button',
-    'a[href*="/buytickets/"]', '[class*="BuyTicket"]', '[class*="buy-ticket"]',
-    'button[class*="BuyNow"]', 'button[class*="buy-now"]', 'button[class*="BookNow"]',
-    '[data-action="buy"]', '[data-action="book"]',
+    'button[class*="book" i]', 'a[class*="book" i]', 
+    '[data-testid*="book" i]', '[data-testid*="buy" i]',
+    '.btn-book', '.book-btn', '#book-button',
+    'a[href*="/buytickets/"]', '[class*="buy-ticket" i]',
+    'button[class*="buy" i]', '[data-action="buy"]', '[data-action="book"]'
   ];
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
+  // ── Helpers (optimized for speed) ───────────────────────────────────────────
   function isVisible(el) {
     try {
-      const r = el.getBoundingClientRect();
       const s = window.getComputedStyle(el);
-      return r.width > 0 && r.height > 0 && s.display !== 'none' && s.visibility !== 'hidden' && parseFloat(s.opacity) > 0;
+      return s.display !== 'none' && s.visibility !== 'hidden' && parseFloat(s.opacity) > 0;
     } catch { return false; }
   }
 
   function isDisabled(el) {
-    return el.disabled || el.getAttribute('aria-disabled') === 'true' || el.classList.contains('disabled') || el.hasAttribute('disabled');
+    return el.disabled || el.getAttribute('aria-disabled') === 'true';
   }
 
-  function buildKeywords() {
+  // Pre-build the combined CSS selector string once (no per-scan overhead)
+  const CSS_SELECTOR_COMBINED = CSS_SELECTORS.join(',');
+
+  // Cache keywords — only rebuild when custom keywords change
+  let _cachedKWs = null;
+  function getKeywords() {
+    if (_cachedKWs) return _cachedKWs;
     const extra = customKW.filter(k => k.trim()).map(k => new RegExp(`^${k.trim()}$`, 'i'));
-    return [...DEFAULT_KEYWORDS, ...extra];
+    _cachedKWs = [...DEFAULT_KEYWORDS, ...extra];
+    return _cachedKWs;
   }
 
   function findTarget() {
-    for (const sel of CSS_SELECTORS) {
-      try {
-        for (const el of document.querySelectorAll(sel)) {
-          if (isVisible(el) && !isDisabled(el)) return el;
-        }
-      } catch (_) {}
-    }
-    const kws = buildKeywords();
+    // Phase 1: Single combined CSS query (fastest path)
+    try {
+      for (const el of document.querySelectorAll(CSS_SELECTOR_COMBINED)) {
+        if (isVisible(el) && !isDisabled(el)) return el;
+      }
+    } catch (_) {}
+
+    // Phase 2: Text-based scan — check text BEFORE expensive visibility
+    const kws = getKeywords();
     for (const el of document.querySelectorAll('button,a[href],[role="button"],input[type="submit"],input[type="button"]')) {
       const t = (el.innerText || el.textContent || el.value || '').trim();
-      if (kws.some(re => re.test(t)) && isVisible(el) && !isDisabled(el)) return el;
+      if (t && kws.some(re => re.test(t)) && isVisible(el) && !isDisabled(el)) return el;
     }
     return null;
   }
 
-  // ── Sound ──────────────────────────────────────────────────────────────────
-  function playBeep() {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      [0, 120, 240].forEach(offset => {
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.connect(g); g.connect(ctx.destination);
-        o.frequency.value = 880;
-        o.type = 'sine';
-        g.gain.setValueAtTime(0, ctx.currentTime + offset/1000);
-        g.gain.linearRampToValueAtTime(0.4, ctx.currentTime + offset/1000 + 0.05);
-        g.gain.linearRampToValueAtTime(0, ctx.currentTime + offset/1000 + 0.2);
-        o.start(ctx.currentTime + offset/1000);
-        o.stop(ctx.currentTime + offset/1000 + 0.25);
-      });
-    } catch (_) {}
-  }
 
-  // ── Click with retry ───────────────────────────────────────────────────────
-  function doClick(el, attempt = 0) {
+  // ── Click ──────────────────────────────────────────────────────────────────
+  function doClick(el) {
     ['mouseover','mouseenter','mousemove','mousedown','mouseup','click'].forEach(ev => {
       el.dispatchEvent(new MouseEvent(ev, { bubbles: true, cancelable: true }));
     });
     el.focus?.();
-
-    // Auto-retry up to 3 times if button is still there
-    if (attempt < 3) {
-      setTimeout(() => {
-        const still = document.contains(el) && isVisible(el) && !isDisabled(el);
-        if (still && !document.hidden) doClick(el, attempt + 1);
-      }, 400 + attempt * 200);
-    }
   }
 
   function fire(el) {
     if (fired) return;
     fired = true;
 
+    // Stop scanning directly — do NOT call disarm() here because
+    // disarm() sends BLITZ_STATUS(active:false) which clears the badge
+    // that BLITZ_FIRED just set.
+    armed = false;
+    clearInterval(pollTimer); pollTimer = null;
+    observer?.disconnect(); observer = null;
+
+    try { sessionStorage.removeItem('blitzArmed'); } catch (_) {}
+
     doClick(el);
-    if (cfg.soundAlert) playBeep();
     chrome.runtime.sendMessage({
       type: 'BLITZ_FIRED',
       url: window.location.href,
       title: document.title,
       buttonText: (el.innerText || el.textContent || '').trim().slice(0, 60),
-      focusTab: cfg.focusTab,
+      duration: startTime ? ((Date.now() - startTime) / 1000).toFixed(1) : 0,
     });
-    disarm();
   }
 
   // ── Watch ──────────────────────────────────────────────────────────────────
@@ -129,6 +111,8 @@
   function arm() {
     if (armed) return;
     armed = true; fired = false;
+    startTime = Date.now();
+    try { sessionStorage.setItem('blitzArmed', 'true'); } catch (_) {}
 
     tryFire();
 
@@ -148,6 +132,7 @@
     armed = false;
     clearInterval(pollTimer); pollTimer = null;
     observer?.disconnect(); observer = null;
+    try { sessionStorage.removeItem('blitzArmed'); } catch (_) {}
     notifyStatus(false);
   }
 
@@ -163,9 +148,10 @@
     }
     if (msg.type === 'BLITZ_ARM') {
       customKW = msg.customKeywords || [];
+      _cachedKWs = null; // Invalidate keyword cache
       if (msg.settings) cfg = { ...cfg, ...msg.settings };
       arm();
-      reply({ ok: true });
+      reply({ ok: true, armed, fired });
       return true;
     }
     if (msg.type === 'BLITZ_DISARM') {
@@ -179,6 +165,14 @@
   // ── Auto-start ─────────────────────────────────────────────────────────────
   chrome.storage.local.get(['blitzKeywords', 'blitzSettings'], res => {
     if (res.blitzSettings) cfg = { ...cfg, ...res.blitzSettings };
+    if (res.blitzKeywords) customKW = res.blitzKeywords;
+    
+    // Auto-arm if this specific tab was left in the ARMED state before reload
+    let wasArmed = false;
+    try { wasArmed = sessionStorage.getItem('blitzArmed') === 'true'; } catch (_) {}
+    if (wasArmed) {
+      arm();
+    }
   });
 
 })();

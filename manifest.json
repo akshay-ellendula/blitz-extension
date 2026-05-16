@@ -2,9 +2,14 @@
   "manifest_version": 3,
   "name": "BLITZ — Instant Queue Grabber",
   "version": "1.0.0",
-  "description": "Arms itself on any booking page and clicks the queue button the millisecond it appears. Works everywhere.",
+  "description": "Arms itself on BookMyShow and District booking pages and clicks the queue button the millisecond it appears.",
   "permissions": ["activeTab", "storage", "notifications", "scripting", "tabs"],
-  "host_permissions": ["<all_urls>"],
+  "host_permissions": [
+    "*://*.bookmyshow.com/*",
+    "*://*.district.in/*",
+    "*://*.zomato.com/*",
+    "http://127.0.0.1:3000/test-page.html"
+  ],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -23,9 +28,14 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
+      "matches": [
+        "*://*.bookmyshow.com/*",
+        "*://*.district.in/*",
+        "*://*.zomato.com/*",
+        "http://127.0.0.1:3000/test-page.html"
+      ],
       "js": ["content.js"],
-      "run_at": "document_idle"
+      "run_at": "document_end"
     }
   ]
 }
