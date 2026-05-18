@@ -225,6 +225,7 @@ nav{
 .btn-ghost:hover{border-color:var(--yellow);color:var(--yellow);}
 .hero-stats{
   display:flex;
+  flex-wrap:wrap;
   gap:28px;
   margin-top:40px;
   padding-top:32px;
@@ -506,13 +507,28 @@ section{padding:100px 5%;}
 }
 .platform-grid{
   display:grid;
-  grid-template-columns:repeat(3,1fr);
+  grid-template-columns:repeat(2,1fr);
   gap:2px;
   margin-top:56px;
   border:1px solid var(--border);
   border-radius:4px;
   overflow:hidden;
 }
+
+.install-grid{
+  margin-top:48px;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:2px;
+  border:1px solid var(--border);
+  border-radius:4px;
+  overflow:hidden;
+}
+.install-step{
+  padding:28px 24px;
+}
+.install-step.bg2{background:var(--bg2);}
+.install-step.bg3{background:var(--bg3);}
 .platform{
   background:var(--bg3);
   padding:28px 24px;
@@ -681,7 +697,16 @@ footer{
   .steps{grid-template-columns:1fr;}
   .features-grid{grid-template-columns:1fr;}
   .platform-grid{grid-template-columns:1fr;}
+  .install-grid{grid-template-columns:repeat(2,1fr);}
   .nav-links{display:none;}
+}
+@media(max-width:600px){
+  .install-grid{grid-template-columns:1fr;}
+  .hero-actions{flex-direction:column;align-items:stretch;}
+  .hero-actions a{justify-content:center;text-align:center;}
+  .hero-stats{flex-direction:column;gap:20px;}
+  .footer-inner{flex-direction:column;align-items:flex-start;}
+  .footer-links{flex-wrap:wrap;}
 }
 </style>
 </head>
@@ -842,7 +867,7 @@ footer{
     <h2 class="section-title">Supported<br/>Platforms</h2>
     <p class="section-desc">BLITZ is built exclusively for these two platforms — tested, optimized, and ready to go.</p>
 
-    <div class="platform-grid" style="grid-template-columns:repeat(2,1fr);">
+    <div class="platform-grid">
       <div class="platform">
         <div class="platform-icon">🎬</div>
         <div>
@@ -870,23 +895,23 @@ footer{
     <h2 class="section-title">Up and Running<br/>in 60 Seconds</h2>
     <p class="section-desc">BLITZ is a Chrome extension installed manually — no app store approval needed.</p>
 
-    <div style="margin-top:48px;display:grid;grid-template-columns:repeat(4,1fr);gap:2px;border:1px solid var(--border);border-radius:4px;overflow:hidden;">
-      <div style="background:var(--bg2);padding:28px 24px;">
+    <div class="install-grid">
+      <div class="install-step bg2">
         <div style="font-family:'Bebas Neue',sans-serif;font-size:48px;color:var(--yellow);opacity:0.15;line-height:1;margin-bottom:16px;">1</div>
         <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--yellow);margin-bottom:8px;">Download</div>
         <p style="font-size:13px;color:var(--text2);line-height:1.6;">Download the BLITZ zip file from this page and unzip it to a folder on your computer.</p>
       </div>
-      <div style="background:var(--bg3);padding:28px 24px;">
+      <div class="install-step bg3">
         <div style="font-family:'Bebas Neue',sans-serif;font-size:48px;color:var(--yellow);opacity:0.15;line-height:1;margin-bottom:16px;">2</div>
         <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--yellow);margin-bottom:8px;">Open Extensions</div>
         <p style="font-size:13px;color:var(--text2);line-height:1.6;">In Chrome, go to <code style="background:var(--bg);padding:2px 6px;border-radius:3px;color:var(--yellow);font-size:11px;">chrome://extensions</code> and enable <strong style="color:var(--text);">Developer Mode</strong> (top right).</p>
       </div>
-      <div style="background:var(--bg2);padding:28px 24px;">
+      <div class="install-step bg2">
         <div style="font-family:'Bebas Neue',sans-serif;font-size:48px;color:var(--yellow);opacity:0.15;line-height:1;margin-bottom:16px;">3</div>
         <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--yellow);margin-bottom:8px;">Load the Folder</div>
         <p style="font-size:13px;color:var(--text2);line-height:1.6;">Click <strong style="color:var(--text);">"Load Unpacked"</strong> and select the unzipped <code style="background:var(--bg);padding:2px 6px;border-radius:3px;color:var(--yellow);font-size:11px;">blitz</code> folder.</p>
       </div>
-      <div style="background:var(--bg3);padding:28px 24px;">
+      <div class="install-step bg3">
         <div style="font-family:'Bebas Neue',sans-serif;font-size:48px;color:var(--yellow);opacity:0.15;line-height:1;margin-bottom:16px;">4</div>
         <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--yellow);margin-bottom:8px;">Done!</div>
         <p style="font-size:13px;color:var(--text2);line-height:1.6;">Pin the BLITZ icon to your toolbar. Navigate to any booking page and click <strong style="color:var(--text);">ARM BLITZ</strong> before the sale starts.</p>
